@@ -50,7 +50,7 @@ class ImageSelectorApp:
         self.thumbnails.clear()
         
         self.image_files = sorted(
-            [f for f in os.listdir(self.image_folder) if f.endswith('.tif')],
+            [f for f in os.listdir(self.image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.tif'))],
             key=lambda x: x.lower()  
         )
         
@@ -109,7 +109,6 @@ def process_hand(image):
   show_image(mask, "Маска")
   contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
   max_contour = max(contours, key=cv2.contourArea)
-  M = cv2.moments(max_contour)
   hull = cv2.convexHull(max_contour, returnPoints=False)
   defects = cv2.convexityDefects(max_contour, hull)
   triples = []
@@ -156,14 +155,16 @@ def process_image(path, label):
         dists.append(np.linalg.norm(t[1] - landmarks[NUMBERS[i]]) + np.linalg.norm(t[0] - landmarks[NUMBERS[i + 1]]))
       min_idx = np.array(dists).argmin()
       if dists[min_idx] > 200:
+        triples[j] = None
         continue
       triples[j][min_idx % 2] = landmarks[NUMBERS[min_idx // 2]]
       triples[j][(min_idx + 1) % 2] = landmarks[NUMBERS[(min_idx // 2) + 1]]
       new_triples.append((min_idx // 2).item())
     for t in triples:
-      color = [150, 150, 150]
-      cv2.line(image, t[0], t[2], thickness=10,color=color)
-      cv2.line(image, t[2], t[1], thickness=10,color=color)
+      if t is not None:
+        color = [150, 150, 150]
+        cv2.line(image, t[0], t[2], thickness=10,color=color)
+        cv2.line(image, t[2], t[1], thickness=10,color=color)
     show_image(image, "Скелет и зазоры")
     row = "1"
     for i in range(len(NUMBERS) - 1):
